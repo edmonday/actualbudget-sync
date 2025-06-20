@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@actual-app/api':
-        specifier: ^25.4.0
-        version: 25.5.0
+        specifier: ^25.6.1
+        version: 25.6.1
       '@actual-app/crdt':
         specifier: ^2.1.0
         version: 2.1.0
@@ -85,9 +85,9 @@ importers:
 
 packages:
 
-  '@actual-app/api@25.5.0':
-    resolution: {integrity: sha512-8xXtolgW3nImmoPR0VrZ52G88yBpdw5j2k0mWCxW1DtMa6X6+gvKg9zrc0usFrrtaK+szjXtjib92B1cNGGVoA==}
-    engines: {node: '>=18.12.0'}
+  '@actual-app/api@25.6.1':
+    resolution: {integrity: sha512-48tElHltAea8KXkMKQWtQzFAHm+4NMcOrR9W0SZDVqtIc6JMIs/uTfdgtRwN4lFl4hgx3YF5SAOJdeswrhiuCw==}
+    engines: {node: '>=20'}
 
   '@actual-app/crdt@2.1.0':
     resolution: {integrity: sha512-Qb8hMq10Wi2kYIDj0fG4uy00f9Mloghd+xQrHQiPQfgx022VPJ/No+z/bmfj4MuFH8FrPiLysSzRsj2PNQIedw==}
@@ -1778,7 +1778,7 @@ packages:
 
 snapshots:
 
-  '@actual-app/api@25.5.0':
+  '@actual-app/api@25.6.1':
     dependencies:
       '@actual-app/crdt': 2.1.0
       better-sqlite3: 11.10.0

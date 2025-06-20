@@ -77,28 +77,27 @@ export class Akahu extends Effect.Service<Akahu>()("Bank/Akahu", {
       Effect.orDie,
     )
 
-    const accountTransactions = Effect.fnUntraced(function* (
-      accountId: string,
-    ) {
-      const now = yield* DateTime.now
-      const lastMonth = now.pipe(DateTime.subtract({ days: 30 }))
-      return pendingTransactions(
-        HttpClientRequest.get(`/accounts/${accountId}/transactions/pending`, {
-          urlParams: {
-            start: DateTime.formatIso(lastMonth),
-            amount_as_number: true,
-          },
-        }),
-      ).pipe(
-        Stream.merge(
-          transactions(
-            HttpClientRequest.get(`/accounts/${accountId}/transactions`, {
-              urlParams: { start: DateTime.formatIso(lastMonth) },
-            }),
+    const accountTransactions = (accountId: string) =>
+      Effect.gen(function* () {
+        const now = yield* DateTime.now
+        const lastMonth = now.pipe(DateTime.subtract({ days: 30 }))
+        return pendingTransactions(
+          HttpClientRequest.get(`/accounts/${accountId}/transactions/pending`, {
+            urlParams: {
+              start: DateTime.formatIso(lastMonth),
+              amount_as_number: true,
+            },
+          }),
+        ).pipe(
+          Stream.merge(
+            transactions(
+              HttpClientRequest.get(`/accounts/${accountId}/transactions`, {
+                urlParams: { start: DateTime.formatIso(lastMonth) },
+              }),
+            ),
           ),
-        ),
-      )
-    }, Stream.unwrap)
+        )
+      }).pipe(Stream.unwrap)
 
     return {
       transactions: accountTransactions,
