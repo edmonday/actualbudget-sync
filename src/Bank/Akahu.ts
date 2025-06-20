@@ -79,24 +79,31 @@ export class Akahu extends Effect.Service<Akahu>()("Bank/Akahu", {
 
     const accountTransactions = (accountId: string) =>
       Effect.gen(function* () {
+        console.log(`Fetching Akahu transactions for account: ${accountId}`)
         const now = yield* DateTime.now
         const lastMonth = now.pipe(DateTime.subtract({ days: 30 }))
-        return pendingTransactions(
+        const timeZone = yield* DateTime.zoneMakeNamed("Pacific/Auckland")
+
+        // Fetch both pending and regular transactions
+        const pendingStream = pendingTransactions(
           HttpClientRequest.get(`/accounts/${accountId}/transactions/pending`, {
             urlParams: {
               start: DateTime.formatIso(lastMonth),
               amount_as_number: true,
             },
           }),
-        ).pipe(
-          Stream.merge(
-            transactions(
-              HttpClientRequest.get(`/accounts/${accountId}/transactions`, {
-                urlParams: { start: DateTime.formatIso(lastMonth) },
-              }),
-            ),
-          ),
         )
+
+        const regularStream = transactions(
+          HttpClientRequest.get(`/accounts/${accountId}/transactions`, {
+            urlParams: { start: DateTime.formatIso(lastMonth) },
+          }),
+        )
+
+        // Just combine the streams without per-transaction logging
+        const combinedStream = pendingStream.pipe(Stream.merge(regularStream))
+
+        return combinedStream
       }).pipe(Stream.unwrap)
 
     return {
@@ -136,15 +143,32 @@ export const AkahuLayer = Effect.gen(function* () {
   return Bank.of({
     exportAccount: (accountId: string) =>
       Effect.scoped(
-        akahu.transactions(accountId).pipe(
-          Stream.runCollect,
-          Effect.map((chunk) =>
-            chunk.pipe(
-              Chunk.map((t) => t.accountTransaction(timeZone)),
-              Chunk.toReadonlyArray,
-            ),
-          ),
-        ),
+        Effect.gen(function* () {
+          // Get transactions and count them
+          const transactionStream = akahu.transactions(accountId)
+          const allTransactions = yield* transactionStream.pipe(
+            Stream.runCollect,
+          )
+
+          const transactions = allTransactions.pipe(
+            Chunk.map((t) => t.accountTransaction(timeZone)),
+          )
+
+          const pendingCount = Chunk.filter(
+            transactions,
+            (t) => !t.cleared,
+          ).length
+          const clearedCount = Chunk.filter(
+            transactions,
+            (t) => !!t.cleared,
+          ).length
+
+          console.log(
+            `Akahu account ${accountId}: ${transactions.length} transactions (${clearedCount} cleared, ${pendingCount} pending)`,
+          )
+
+          return Chunk.toReadonlyArray(transactions)
+        }),
       ).pipe(
         Effect.mapError(
           (cause) =>
