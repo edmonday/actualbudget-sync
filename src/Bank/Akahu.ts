@@ -135,13 +135,24 @@ export const AkahuLayer = Effect.gen(function* () {
 
   return Bank.of({
     exportAccount: (accountId: string) =>
-      akahu.transactions(accountId).pipe(
-        Stream.runCollect,
-        Effect.map((chunk) =>
-          chunk.pipe(
-            Chunk.map((t) => t.accountTransaction(timeZone)),
-            Chunk.toReadonlyArray,
+      Effect.scoped(
+        akahu.transactions(accountId).pipe(
+          Stream.runCollect,
+          Effect.map((chunk) =>
+            chunk.pipe(
+              Chunk.map((t) => t.accountTransaction(timeZone)),
+              Chunk.toReadonlyArray,
+            ),
           ),
+        ),
+      ).pipe(
+        Effect.mapError(
+          (cause) =>
+            new BankError({
+              reason: "Unknown",
+              bank: "Akahu",
+              cause,
+            }),
         ),
       ),
   })
